@@ -1,6 +1,6 @@
 class SoundmapGame {
     constructor() {
-        this.spotifyClientId = '8cc41a36c4624e9ca446c495c4cb225d';
+        this.spotifyClientId = '8bedcf805e4d487e98cfda4422f30a9d';
         this.spotifyRedirectUri = `${window.location.origin}${window.location.pathname}`;
         this.totalRounds = 10;
         this.score = 0;
