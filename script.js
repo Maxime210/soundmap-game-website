@@ -75,10 +75,11 @@ class SoundmapGame {
         this.startButton.disabled = true;
         this.status.hidden = true;
         this.spotifyStatus.textContent = 'Searching Spotify for tracks with preview audio…';
+        let previewCandidates = [];
         try {
-            const candidates = await this.fetchSpotifyTracks();
-            this.spotifyStatus.textContent = 'Checking that Spotify previews can actually play…';
-            this.tracks = await this.keepPlayablePreviews(candidates);
+            previewCandidates = await this.fetchSpotifyTracks();
+            this.spotifyStatus.textContent = `Spotify returned ${previewCandidates.length} preview URL${previewCandidates.length === 1 ? '' : 's'}; checking which can play…`;
+            this.tracks = await this.keepPlayablePreviews(previewCandidates);
         } catch (error) {
             console.error('Could not load Spotify previews:', error);
             this.startButton.disabled = false;
@@ -88,7 +89,9 @@ class SoundmapGame {
 
         if (this.tracks.length === 0) {
             this.startButton.disabled = false;
-            this.spotifyStatus.textContent = 'Spotify did not return any previews that can be played right now. Try again later; tracks without playable preview audio are skipped.';
+            this.spotifyStatus.textContent = previewCandidates.length === 0
+                ? 'Spotify returned no preview URLs for these tracks. Its API marks preview_url as deprecated and nullable, so this app cannot play them. No non-preview audio is substituted.'
+                : `Spotify returned ${previewCandidates.length} preview URL${previewCandidates.length === 1 ? '' : 's'}, but none could be loaded as playable audio. Try again later; no non-preview audio is substituted.`;
             return;
         }
 
