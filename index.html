@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#10130f">
-    <meta name="description" content="Listen to an original mystery music clip and see if you can name the track.">
+    <meta name="description" content="Listen to mystery music previews and see if you can name the track.">
     <title>Soundmap — Name that tune</title>
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
@@ -38,7 +38,7 @@
                     <div class="listening-art" id="listening-art" aria-hidden="true">
                         <div class="art-glow"></div>
                         <div class="sound-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                        <span class="art-caption">AUDIO CLIP <span>·</span> SYNTHESIZED CLASSIC</span>
+                        <span class="art-caption" id="audio-source-caption">AUDIO CLIP <span>·</span> CLASSIC MELODY</span>
                     </div>
 
                     <div class="player">
@@ -73,6 +73,7 @@
                     </form>
 
                     <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
+                    <a class="spotify-track-link" id="spotify-track-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open track on Spotify ↗</a>
 
                     <div class="card-footer">
                         <span>Made for curious ears</span>
@@ -98,11 +99,13 @@
                         <p>Get the <strong>title and artist or composer</strong> right for a perfect score.</p>
                     </div>
                     <button class="button button-secondary" id="start-btn" type="button">Start playing <span aria-hidden="true">→</span></button>
+                    <button class="button button-secondary spotify-button" id="spotify-btn" type="button">Connect Spotify <span aria-hidden="true">♫</span></button>
+                    <p class="connection-status" id="spotify-status" role="status" aria-live="polite">Connect Spotify to try real track previews. Without a connection, the local melody game is ready.</p>
                     <button class="button button-secondary next-button" id="next-btn" type="button" hidden>Next track <span aria-hidden="true">→</span></button>
                 </aside>
             </section>
 
-            <p class="page-note">Classic melodies are synthesized locally for this game. No recordings or streaming services.</p>
+            <p class="page-note">Spotify previews are used only when Spotify makes them available; the local melody game is always ready as a fallback.</p>
         </main>
 
         <footer class="site-footer">
