@@ -45,10 +45,8 @@ class SoundmapGame {
             this.playerSubtitle.textContent = 'Preview finished · listen again or make your guess';
         });
         this.previewAudio.addEventListener('error', () => {
-            this.listeningArt.classList.remove('is-playing');
-            this.playButton.disabled = this.answered;
             this.playerSubtitle.textContent = 'Spotify preview is unavailable';
-            this.showFeedback('Spotify could not load this preview. You can continue to the next Spotify preview.', 'incorrect');
+            this.skipUnavailablePreview();
         });
         this.form.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -78,7 +76,9 @@ class SoundmapGame {
         this.status.hidden = true;
         this.spotifyStatus.textContent = 'Searching Spotify for tracks with preview audio…';
         try {
-            this.tracks = await this.fetchSpotifyTracks();
+            const candidates = await this.fetchSpotifyTracks();
+            this.spotifyStatus.textContent = 'Checking that Spotify previews can actually play…';
+            this.tracks = await this.keepPlayablePreviews(candidates);
         } catch (error) {
             console.error('Could not load Spotify previews:', error);
             this.startButton.disabled = false;
@@ -88,7 +88,7 @@ class SoundmapGame {
 
         if (this.tracks.length === 0) {
             this.startButton.disabled = false;
-            this.spotifyStatus.textContent = 'Spotify returned no tracks with preview audio. Try again later; tracks without Spotify previews are not played.';
+            this.spotifyStatus.textContent = 'Spotify did not return any previews that can be played right now. Try again later; tracks without playable preview audio are skipped.';
             return;
         }
 
@@ -97,7 +97,7 @@ class SoundmapGame {
         document.getElementById('round-total').textContent = this.totalRounds;
         this.progress.setAttribute('aria-valuemax', this.totalRounds);
         this.spotifyStatus.textContent = this.totalRounds < 10
-            ? `Found ${this.totalRounds} Spotify preview${this.totalRounds === 1 ? '' : 's'}. Playing all available previews; no other audio is used.`
+            ? `Found ${this.totalRounds} Spotify preview${this.totalRounds === 1 ? '' : 's'} that can play. Only playable Spotify previews are included.`
             : 'Spotify previews are ready for this session.';
         this.startButton.disabled = false;
         this.startButton.hidden = true;
@@ -114,7 +114,7 @@ class SoundmapGame {
             const parameters = new URLSearchParams({
                 q: query,
                 type: 'track',
-                limit: '10',
+                limit: '50',
                 offset: '0'
             });
             const response = await fetch(`https://api.spotify.com/v1/search?${parameters}`, {
@@ -151,10 +151,52 @@ class SoundmapGame {
                     spotifyUrl: track.external_urls?.spotify
                 });
             }
-            if (found.size >= this.totalRounds) break;
+            if (found.size >= 50) break;
         }
 
         return [...found.values()];
+    }
+
+    async keepPlayablePreviews(candidates) {
+        const playable = [];
+        const batchSize = 4;
+
+        for (let index = 0; index < candidates.length && playable.length < this.totalRounds; index += batchSize) {
+            const batch = candidates.slice(index, index + batchSize);
+            const results = await Promise.all(batch.map(async (track) => ({
+                track,
+                playable: await this.canPlayPreview(track.previewUrl)
+            })));
+            playable.push(...results.filter((result) => result.playable).map((result) => result.track));
+        }
+
+        return playable.slice(0, this.totalRounds);
+    }
+
+    canPlayPreview(url) {
+        return new Promise((resolve) => {
+            const audio = new Audio();
+            let settled = false;
+            const finish = (playable) => {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timeout);
+                audio.removeEventListener('canplay', onCanPlay);
+                audio.removeEventListener('error', onError);
+                audio.removeAttribute('src');
+                audio.load();
+                resolve(playable);
+            };
+            const onCanPlay = () => finish(audio.readyState >= 3);
+            const onError = () => finish(false);
+            const timeout = window.setTimeout(() => finish(false), 5000);
+
+            audio.preload = 'auto';
+            audio.addEventListener('canplay', onCanPlay, { once: true });
+            audio.addEventListener('error', onError, { once: true });
+            audio.src = url;
+            audio.load();
+        });
     }
 
     async connectSpotify() {
@@ -312,8 +354,20 @@ class SoundmapGame {
         } catch (error) {
             console.error('Could not play the Spotify preview:', error);
             this.playerSubtitle.textContent = 'Spotify could not play this preview';
-            this.showFeedback('Spotify could not play this preview. Try replaying it or continue with your guess.', 'incorrect');
+            this.skipUnavailablePreview();
         }
+    }
+
+    skipUnavailablePreview() {
+        if (this.answered || !this.currentTrack) return;
+        this.stopClip();
+        this.answered = true;
+        this.songInput.disabled = true;
+        this.artistInput.disabled = true;
+        this.form.querySelector('#submit-guess').disabled = true;
+        this.showFeedback('This Spotify preview could not be played, so the track was skipped without points.', 'incorrect');
+        this.nextButton.textContent = this.roundIndex === this.totalRounds - 1 ? 'See final score →' : 'Next preview →';
+        this.nextButton.hidden = false;
     }
 
     stopClip() {
