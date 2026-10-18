@@ -107,15 +107,15 @@ class SoundmapGame {
     }
 
     async fetchSpotifyTracks() {
-        const queries = ['year:2020-2026', 'genre:pop', 'genre:rock', 'genre:indie', 'genre:hip-hop'];
+        const queries = ['popular music', 'pop music', 'rock music', 'indie music', 'new music'];
         const found = new Map();
 
         for (const query of queries) {
             const parameters = new URLSearchParams({
                 q: query,
                 type: 'track',
-                limit: '50',
-                offset: String(Math.floor(Math.random() * 100))
+                limit: '10',
+                offset: '0'
             });
             const response = await fetch(`https://api.spotify.com/v1/search?${parameters}`, {
                 headers: { Authorization: `Bearer ${this.spotifyToken}` }
@@ -130,7 +130,15 @@ class SoundmapGame {
                 throw new Error('Spotify denied access. Check that your Spotify app is in Development Mode and your account is allowed.');
             }
             if (!response.ok) {
-                throw new Error(`Spotify search failed (HTTP ${response.status}).`);
+                const responseText = await response.text();
+                let details = responseText;
+                try {
+                    const errorBody = JSON.parse(responseText);
+                    details = errorBody.error?.message ?? responseText;
+                } catch (error) {
+                    if (!(error instanceof SyntaxError)) throw error;
+                }
+                throw new Error(`Spotify search failed for “${query}” (HTTP ${response.status}): ${details || 'No details returned.'}`);
             }
 
             const data = await response.json();
