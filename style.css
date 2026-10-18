@@ -428,6 +428,7 @@ h2 {
     color: #858c80;
     font-size: 9px;
     line-height: 1.55;
+    overflow-wrap: anywhere;
     text-align: center;
 }
 

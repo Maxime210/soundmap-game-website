@@ -8,9 +8,6 @@ class SoundmapGame {
         this.tracks = [];
         this.currentTrack = null;
         this.answered = false;
-        this.audioContext = null;
-        this.audioNodes = [];
-        this.audioTimer = null;
         this.previewAudio = new Audio();
         this.spotifyToken = null;
 
@@ -47,6 +44,12 @@ class SoundmapGame {
             this.playButton.setAttribute('aria-label', 'Replay audio preview');
             this.playerSubtitle.textContent = 'Preview finished · listen again or make your guess';
         });
+        this.previewAudio.addEventListener('error', () => {
+            this.listeningArt.classList.remove('is-playing');
+            this.playButton.disabled = this.answered;
+            this.playerSubtitle.textContent = 'Spotify preview is unavailable';
+            this.showFeedback('Spotify could not load this preview. You can continue to the next Spotify preview.', 'incorrect');
+        });
         this.form.addEventListener('submit', (event) => {
             event.preventDefault();
             this.submitGuess();
@@ -59,49 +62,43 @@ class SoundmapGame {
         this.handleSpotifyCallback();
     }
 
-    getCatalog() {
-        return [
-            { title: 'Ode to Joy', artist: 'Ludwig van Beethoven', notes: [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] },
-            { title: 'Für Elise', artist: 'Ludwig van Beethoven', notes: [76, 75, 76, 75, 76, 71, 74, 72, 69, 60, 64, 69, 71, 64, 68, 71, 72] },
-            { title: 'Turkish March', artist: 'Wolfgang Amadeus Mozart', notes: [69, 71, 72, 74, 76, 74, 72, 71, 69, 68, 69, 72, 76, 69, 71, 72] },
-            { title: 'Eine kleine Nachtmusik', artist: 'Wolfgang Amadeus Mozart', notes: [67, 74, 79, 74, 67, 74, 79, 74, 79, 74, 71, 74, 79, 74, 67] },
-            { title: 'Minuet in G major', artist: 'Christian Petzold', notes: [74, 67, 69, 71, 72, 74, 67, 67, 76, 72, 74, 76, 78, 79, 79] },
-            { title: 'Spring', artist: 'Antonio Vivaldi', notes: [76, 76, 76, 72, 74, 74, 74, 71, 72, 72, 72, 69, 71, 71, 71] },
-            { title: 'The Entertainer', artist: 'Scott Joplin', notes: [72, 74, 76, 72, 60, 64, 67, 72, 74, 76, 77, 76, 74, 72, 67] },
-            { title: 'Swan Lake', artist: 'Pyotr Ilyich Tchaikovsky', notes: [71, 78, 74, 71, 69, 67, 69, 71, 74, 78, 76, 74, 71, 69, 67] },
-            { title: 'Canon in D', artist: 'Johann Pachelbel', notes: [62, 66, 69, 74, 73, 66, 69, 73, 71, 64, 67, 71, 69, 62, 66] },
-            { title: 'Greensleeves', artist: 'Traditional', notes: [69, 72, 74, 76, 77, 76, 74, 71, 67, 69, 71, 72, 74, 69, 69] }
-        ];
-    }
-
     async startGame() {
-        this.stopClip();
+        if (!this.spotifyToken) {
+            this.spotifyStatus.textContent = 'Connect Spotify first, then start the game. Only Spotify-provided previews are played.';
+            this.spotifyButton.focus();
+            return;
+        }
+
         this.score = 0;
         this.roundIndex = 0;
+        this.totalRounds = 10;
+        document.getElementById('round-total').textContent = this.totalRounds;
+        this.progress.setAttribute('aria-valuemax', this.totalRounds);
         this.startButton.disabled = true;
         this.status.hidden = true;
-        if (this.spotifyToken) {
-            try {
-                this.tracks = await this.fetchSpotifyTracks();
-                if (!this.tracks.length) {
-                    this.spotifyStatus.textContent = 'Spotify returned no playable previews. Starting the local melody game instead.';
-                    this.tracks = this.getCatalog();
-                } else if (this.tracks.length < this.totalRounds) {
-                    const missing = this.totalRounds - this.tracks.length;
-                    this.spotifyStatus.textContent = `Found ${this.tracks.length} Spotify preview${this.tracks.length === 1 ? '' : 's'}; filling ${missing} round${missing === 1 ? '' : 's'} with local melodies.`;
-                    this.tracks = [...this.tracks, ...this.shuffle(this.getCatalog()).slice(0, missing)];
-                } else {
-                    this.spotifyStatus.textContent = 'Spotify previews are ready for this session.';
-                }
-            } catch (error) {
-                console.error('Could not load Spotify previews:', error);
-                this.spotifyStatus.textContent = `${error.message} Starting the local melody game instead.`;
-                this.tracks = this.getCatalog();
-            }
-        } else {
-            this.tracks = this.getCatalog();
+        this.spotifyStatus.textContent = 'Searching Spotify for tracks with preview audio…';
+        try {
+            this.tracks = await this.fetchSpotifyTracks();
+        } catch (error) {
+            console.error('Could not load Spotify previews:', error);
+            this.startButton.disabled = false;
+            this.spotifyStatus.textContent = error.message;
+            return;
         }
-        this.tracks = this.shuffle(this.tracks).slice(0, this.totalRounds);
+
+        if (this.tracks.length === 0) {
+            this.startButton.disabled = false;
+            this.spotifyStatus.textContent = 'Spotify returned no tracks with preview audio. Try again later; tracks without Spotify previews are not played.';
+            return;
+        }
+
+        this.tracks = this.shuffle(this.tracks);
+        this.totalRounds = this.tracks.length;
+        document.getElementById('round-total').textContent = this.totalRounds;
+        this.progress.setAttribute('aria-valuemax', this.totalRounds);
+        this.spotifyStatus.textContent = this.totalRounds < 10
+            ? `Found ${this.totalRounds} Spotify preview${this.totalRounds === 1 ? '' : 's'}. Playing all available previews; no other audio is used.`
+            : 'Spotify previews are ready for this session.';
         this.startButton.disabled = false;
         this.startButton.hidden = true;
         this.nextButton.hidden = true;
@@ -110,7 +107,7 @@ class SoundmapGame {
     }
 
     async fetchSpotifyTracks() {
-        const queries = ['genre:pop', 'genre:rock', 'genre:indie', 'genre:hip-hop'];
+        const queries = ['year:2020-2026', 'genre:pop', 'genre:rock', 'genre:indie', 'genre:hip-hop'];
         const found = new Map();
 
         for (const query of queries) {
@@ -137,8 +134,8 @@ class SoundmapGame {
             }
 
             const data = await response.json();
-            for (const track of data.tracks.items) {
-                if (!track.preview_url || !track.name || !track.artists?.length || found.has(track.id)) continue;
+            for (const track of data.tracks?.items ?? []) {
+                if (!track.preview_url || !track.name || !track.artists?.length || !track.id || found.has(track.id)) continue;
                 found.set(track.id, {
                     title: track.name,
                     artist: track.artists.map((artist) => artist.name).join(', '),
@@ -189,7 +186,9 @@ class SoundmapGame {
         window.history.replaceState({}, document.title, this.spotifyRedirectUri);
 
         try {
-            if (spotifyError) throw new Error(`Spotify sign-in was not completed (${spotifyError}).`);
+            if (spotifyError) {
+                throw new Error(`Spotify sign-in was not completed (${spotifyError}). Check that this exact Redirect URI is registered in your Spotify Developer Dashboard: ${this.spotifyRedirectUri}`);
+            }
             const expectedState = sessionStorage.getItem('soundmap-spotify-state');
             const verifier = sessionStorage.getItem('soundmap-spotify-verifier');
             sessionStorage.removeItem('soundmap-spotify-state');
@@ -209,7 +208,10 @@ class SoundmapGame {
                     code_verifier: verifier
                 })
             });
-            if (!response.ok) throw new Error(`Spotify token request failed (HTTP ${response.status}).`);
+            if (!response.ok) {
+                const details = await response.text();
+                throw new Error(`Spotify token request failed (HTTP ${response.status}). Confirm the registered Redirect URI exactly matches ${this.spotifyRedirectUri}. ${details}`);
+            }
             const token = await response.json();
             this.spotifyToken = token.access_token;
             this.updateSpotifyConnection(true);
@@ -221,9 +223,19 @@ class SoundmapGame {
     }
 
     disconnectSpotify() {
+        this.stopClip();
         this.spotifyToken = null;
         this.updateSpotifyConnection(false);
-        this.spotifyStatus.textContent = 'Spotify disconnected. The local melody game is ready.';
+        this.spotifyStatus.textContent = 'Spotify disconnected. Connect again to play Spotify previews.';
+        if (this.currentTrack && !this.answered) {
+            this.currentTrack = null;
+            this.startButton.hidden = false;
+            this.nextButton.hidden = true;
+            this.playButton.disabled = true;
+            this.songInput.disabled = true;
+            this.artistInput.disabled = true;
+            this.form.querySelector('#submit-guess').disabled = true;
+        }
     }
 
     updateSpotifyConnection(connected) {
@@ -248,6 +260,9 @@ class SoundmapGame {
     loadRound() {
         this.stopClip();
         this.currentTrack = this.tracks[this.roundIndex];
+        if (!this.currentTrack?.previewUrl) {
+            throw new Error('A track without a Spotify preview cannot be loaded.');
+        }
         this.answered = false;
         const round = this.roundIndex + 1;
 
@@ -255,13 +270,9 @@ class SoundmapGame {
         this.updateProgress(round - 1);
         this.tracksPlayedDisplay.innerHTML = `${round - 1} <small>/ ${this.totalRounds}</small>`;
         this.playerTitle.textContent = `Mystery track ${String(round).padStart(2, '0')}`;
-        this.playerSubtitle.textContent = this.currentTrack.previewUrl
-            ? 'Spotify preview · tap to listen'
-            : 'Synthesized melody · tap to listen';
-        this.clipLength.textContent = this.currentTrack.previewUrl ? '0:30' : '0:03';
-        this.audioSourceCaption.textContent = this.currentTrack.previewUrl
-            ? 'AUDIO CLIP · SPOTIFY PREVIEW'
-            : 'AUDIO CLIP · CLASSIC MELODY';
+        this.playerSubtitle.textContent = 'Spotify preview · tap to listen';
+        this.clipLength.textContent = '0:30';
+        this.audioSourceCaption.textContent = 'SPOTIFY TRACK PREVIEW';
         this.previewAudio.pause();
         this.previewAudio.removeAttribute('src');
         if (this.currentTrack.previewUrl) this.previewAudio.src = this.currentTrack.previewUrl;
@@ -283,92 +294,23 @@ class SoundmapGame {
     async playClip() {
         if (!this.currentTrack || this.answered || this.playButton.disabled) return;
 
-        if (this.currentTrack.previewUrl) {
-            try {
-                this.previewAudio.currentTime = 0;
-                await this.previewAudio.play();
-                this.listeningArt.classList.add('is-playing');
-                this.playButton.disabled = true;
-                this.playButton.setAttribute('aria-label', 'Audio preview is playing');
-                this.playerSubtitle.textContent = 'Spotify preview playing…';
-            } catch (error) {
-                console.error('Could not play the Spotify preview:', error);
-                this.playerSubtitle.textContent = 'Spotify could not play this preview';
-                this.showFeedback('Spotify could not play this preview. Try replaying it or continue with your guess.', 'incorrect');
-            }
-            return;
-        }
-
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) {
-            this.showFeedback('Audio playback is not supported in this browser. You can still make a guess and play the game.', 'incorrect');
-            return;
-        }
-
         try {
-            if (!this.audioContext) this.audioContext = new AudioContextClass();
-            if (this.audioContext.state === 'suspended') await this.audioContext.resume();
-            this.scheduleMelody(this.currentTrack.notes);
+            this.previewAudio.currentTime = 0;
+            await this.previewAudio.play();
+            this.listeningArt.classList.add('is-playing');
+            this.playButton.disabled = true;
+            this.playButton.setAttribute('aria-label', 'Spotify preview is playing');
+            this.playerSubtitle.textContent = 'Spotify preview playing…';
         } catch (error) {
-            console.error('Could not play the demo clip:', error);
-            this.playerSubtitle.textContent = 'Audio could not start — check your browser sound settings';
-            this.showFeedback('The demo audio could not start. Check your browser sound settings, then try the play button again.', 'incorrect');
+            console.error('Could not play the Spotify preview:', error);
+            this.playerSubtitle.textContent = 'Spotify could not play this preview';
+            this.showFeedback('Spotify could not play this preview. Try replaying it or continue with your guess.', 'incorrect');
         }
-    }
-
-    scheduleMelody(notes) {
-        this.stopClip();
-        const startAt = this.audioContext.currentTime + 0.06;
-        const beat = 0.235;
-        this.audioNodes = [];
-        this.listeningArt.classList.add('is-playing');
-        this.playButton.disabled = true;
-        this.playButton.setAttribute('aria-label', 'Audio clip is playing');
-        this.playerSubtitle.textContent = 'Listen closely…';
-
-        notes.forEach((note, index) => {
-            const start = startAt + index * beat;
-            const oscillator = this.audioContext.createOscillator();
-            const envelope = this.audioContext.createGain();
-            oscillator.type = index % 4 === 0 ? 'sine' : 'triangle';
-            oscillator.frequency.setValueAtTime(440 * Math.pow(2, (note - 69) / 12), start);
-            envelope.gain.setValueAtTime(0.0001, start);
-            envelope.gain.linearRampToValueAtTime(0.075, start + 0.018);
-            envelope.gain.setValueAtTime(0.05, start + beat * 0.57);
-            envelope.gain.exponentialRampToValueAtTime(0.0001, start + beat * 0.88);
-            oscillator.connect(envelope);
-            envelope.connect(this.audioContext.destination);
-            oscillator.start(start);
-            oscillator.stop(start + beat * 0.9);
-            this.audioNodes.push(oscillator);
-        });
-
-        const duration = (notes.length * beat + 0.18) * 1000;
-        this.audioTimer = window.setTimeout(() => {
-            this.audioNodes = [];
-            this.audioTimer = null;
-            this.listeningArt.classList.remove('is-playing');
-            this.playButton.disabled = false;
-            this.playButton.setAttribute('aria-label', 'Replay audio clip');
-            this.playerSubtitle.textContent = 'Clip finished · listen again or make your guess';
-        }, duration);
     }
 
     stopClip() {
         this.previewAudio.pause();
         this.previewAudio.currentTime = 0;
-        if (this.audioTimer !== null) {
-            window.clearTimeout(this.audioTimer);
-            this.audioTimer = null;
-        }
-        for (const node of this.audioNodes) {
-            try {
-                node.stop();
-            } catch (error) {
-                if (!(error instanceof DOMException && error.name === 'InvalidStateError')) throw error;
-            }
-        }
-        this.audioNodes = [];
         this.listeningArt.classList.remove('is-playing');
         this.playButton.disabled = !this.currentTrack || this.answered;
         this.playButton.setAttribute('aria-label', 'Play audio clip');
@@ -442,7 +384,7 @@ class SoundmapGame {
         this.songInput.disabled = true;
         this.artistInput.disabled = true;
         this.form.querySelector('#submit-guess').disabled = true;
-        this.formHint.textContent = 'Play again for a fresh set of demo tracks.';
+        this.formHint.textContent = 'Start another round of Spotify previews whenever you’re ready.';
         this.startButton.textContent = 'Play again';
         this.startButton.hidden = false;
         this.nextButton.hidden = true;

@@ -23,7 +23,7 @@
             <section class="intro" aria-labelledby="page-title">
                 <p class="eyebrow">A little game for your ears</p>
                 <h1 id="page-title">Name that <span>tune.</span></h1>
-                <p class="intro-copy">Listen close, trust your instincts, and see how many tracks you can call.</p>
+                <p class="intro-copy">Listen to Spotify previews, trust your instincts, and see how many tracks you can call.</p>
             </section>
 
             <section class="game-layout" aria-label="Music guessing game">
@@ -38,7 +38,7 @@
                     <div class="listening-art" id="listening-art" aria-hidden="true">
                         <div class="art-glow"></div>
                         <div class="sound-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                        <span class="art-caption" id="audio-source-caption">AUDIO CLIP <span>·</span> CLASSIC MELODY</span>
+                        <span class="art-caption" id="audio-source-caption">SPOTIFY TRACK PREVIEW</span>
                     </div>
 
                     <div class="player">
@@ -67,7 +67,7 @@
                         <label class="field-label" for="artist-guess">Artist / composer</label>
                         <input id="artist-guess" name="artist" type="text" placeholder="Who composed or performed it?" autocomplete="off" disabled>
                         <div class="form-actions">
-                            <p class="form-hint" id="form-hint">You can replay the clip as many times as you like.</p>
+                            <p class="form-hint" id="form-hint">You can replay each Spotify preview as many times as you like.</p>
                             <button class="button button-primary" id="submit-guess" type="submit" disabled>Lock it in <span aria-hidden="true">↗</span></button>
                         </div>
                     </form>
@@ -77,7 +77,7 @@
 
                     <div class="card-footer">
                         <span>Made for curious ears</span>
-                        <span class="footer-note"><span aria-hidden="true">♫</span> No account. Just good guesses.</span>
+                        <span class="footer-note"><span aria-hidden="true">♫</span> Spotify previews only.</span>
                     </div>
                 </div>
 
@@ -96,16 +96,16 @@
                     </div>
                     <div class="score-tip">
                         <span class="tip-icon" aria-hidden="true">✳</span>
-                        <p>Get the <strong>title and artist or composer</strong> right for a perfect score.</p>
+                        <p>Get the <strong>title and artist</strong> right for a perfect score.</p>
                     </div>
                     <button class="button button-secondary" id="start-btn" type="button">Start playing <span aria-hidden="true">→</span></button>
                     <button class="button button-secondary spotify-button" id="spotify-btn" type="button">Connect Spotify <span aria-hidden="true">♫</span></button>
-                    <p class="connection-status" id="spotify-status" role="status" aria-live="polite">Connect Spotify to try real track previews. Without a connection, the local melody game is ready.</p>
+                    <p class="connection-status" id="spotify-status" role="status" aria-live="polite">Connect Spotify to find available track previews. If sign-in is rejected, register this exact Redirect URI in your Spotify Developer Dashboard: https://maxime210.github.io/soundmap-game-website/</p>
                     <button class="button button-secondary next-button" id="next-btn" type="button" hidden>Next track <span aria-hidden="true">→</span></button>
                 </aside>
             </section>
 
-            <p class="page-note">Spotify previews are used only when Spotify makes them available; the local melody game is always ready as a fallback.</p>
+            <p class="page-note">Only Spotify-provided track previews are played. Tracks without an available preview are skipped.</p>
         </main>
 
         <footer class="site-footer">
