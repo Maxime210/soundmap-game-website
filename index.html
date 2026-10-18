@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10130f">
+    <meta name="description" content="Listen to an original mystery music clip and see if you can name the track.">
+    <title>Soundmap — Name that tune</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="#" aria-label="Soundmap home">
+                <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                <span>soundmap<span class="brand-dot">.</span></span>
+            </a>
+            <span class="edition"><span class="live-dot"></span> THE DAILY LISTEN</span>
+        </header>
+
+        <main>
+            <section class="intro" aria-labelledby="page-title">
+                <p class="eyebrow">A little game for your ears</p>
+                <h1 id="page-title">Name that <span>tune.</span></h1>
+                <p class="intro-copy">Listen close, trust your instincts, and see how many tracks you can call.</p>
+            </section>
+
+            <section class="game-layout" aria-label="Music guessing game">
+                <div class="game-card">
+                    <div class="card-topline">
+                        <div class="round-label">ROUND <span id="round-number">—</span><span class="round-divider">/</span><span id="round-total">10</span></div>
+                        <div class="progress-track" role="progressbar" aria-label="Game progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+                            <span id="progress-fill"></span>
+                        </div>
+                    </div>
+
+                    <div class="listening-art" id="listening-art" aria-hidden="true">
+                        <div class="art-glow"></div>
+                        <div class="sound-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                        <span class="art-caption">AUDIO CLIP <span>·</span> SYNTHESIZED CLASSIC</span>
+                    </div>
+
+                    <div class="player">
+                        <button class="play-button" id="play-btn" type="button" aria-label="Play audio clip" disabled>
+                            <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.8l9.1 6.2a1 1 0 0 1 0 1.6l-9.1 6.2a1 1 0 0 1-1.6-.8V5.8Z"/></svg>
+                        </button>
+                        <div class="player-copy">
+                            <strong id="player-title">Your mystery track</strong>
+                            <span id="player-subtitle">Start a game to hear the clip</span>
+                        </div>
+                        <span class="clip-length" id="clip-length">0:00</span>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <form id="guess-form" novalidate>
+                        <div class="form-heading">
+                            <div>
+                                <p class="eyebrow">Your best guess</p>
+                                <h2>What are we listening to?</h2>
+                            </div>
+                            <span class="points-note">UP TO 150 PTS</span>
+                        </div>
+                        <label class="field-label" for="song-guess">Song title</label>
+                        <input id="song-guess" name="song" type="text" placeholder="Type the track name…" autocomplete="off" disabled>
+                        <label class="field-label" for="artist-guess">Artist / composer</label>
+                        <input id="artist-guess" name="artist" type="text" placeholder="Who composed or performed it?" autocomplete="off" disabled>
+                        <div class="form-actions">
+                            <p class="form-hint" id="form-hint">You can replay the clip as many times as you like.</p>
+                            <button class="button button-primary" id="submit-guess" type="submit" disabled>Lock it in <span aria-hidden="true">↗</span></button>
+                        </div>
+                    </form>
+
+                    <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
+
+                    <div class="card-footer">
+                        <span>Made for curious ears</span>
+                        <span class="footer-note"><span aria-hidden="true">♫</span> No account. Just good guesses.</span>
+                    </div>
+                </div>
+
+                <aside class="score-card" aria-label="Your score">
+                    <p class="eyebrow">YOUR SESSION</p>
+                    <div class="score-value" id="score">0</div>
+                    <p class="score-caption">points so far</p>
+                    <div class="score-divider"></div>
+                    <div class="score-detail">
+                        <span>Tracks played</span>
+                        <strong id="tracks-played">0 <small>/ 10</small></strong>
+                    </div>
+                    <div class="score-detail">
+                        <span>Best score</span>
+                        <strong id="best-score">0</strong>
+                    </div>
+                    <div class="score-tip">
+                        <span class="tip-icon" aria-hidden="true">✳</span>
+                        <p>Get the <strong>title and artist or composer</strong> right for a perfect score.</p>
+                    </div>
+                    <button class="button button-secondary" id="start-btn" type="button">Start playing <span aria-hidden="true">→</span></button>
+                    <button class="button button-secondary next-button" id="next-btn" type="button" hidden>Next track <span aria-hidden="true">→</span></button>
+                </aside>
+            </section>
+
+            <p class="page-note">Classic melodies are synthesized locally for this game. No recordings or streaming services.</p>
+        </main>
+
+        <footer class="site-footer">
+            <span>soundmap<span class="brand-dot">.</span></span>
+            <span>LISTEN A LITTLE CLOSER.</span>
+        </footer>
+    </div>
+</body>
+</html>
